@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the global Node version
+#
+# Usage: ndenv global <version>
+#
+# Sets the global Node version. You can override the global version at
+# any time by setting a directory-specific version with `ndenv local'
+# or by setting the `NDENV_VERSION' environment variable.
+#
+# <version> should be a string matching a Node version known to ndenv.
+# The special version string `system' will use your default system Node.
+# Run `ndenv versions' for a list of available Node versions.
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  echo system
+  exec ndenv-versions --bare
+fi
+
+NDENV_VERSION="$1"
+NDENV_VERSION_FILE="${NDENV_ROOT}/version"
+
+if [ -n "$NDENV_VERSION" ]; then
+  ndenv-version-file-write "$NDENV_VERSION_FILE" "$NDENV_VERSION"
+else
+  ndenv-version-file-read "$NDENV_VERSION_FILE" ||
+  ndenv-version-file-read "${NDENV_ROOT}/global" ||
+  ndenv-version-file-read "${NDENV_ROOT}/default" ||
+  echo system
+fi

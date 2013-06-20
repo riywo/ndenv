@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Summary: List existing ndenv shims
+# Usage: ndenv shims [--short]
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  echo --short
+  exit
+fi
+
+shopt -s nullglob
+
+for command in "${NDENV_ROOT}/shims/"*; do
+  if [ "$1" = "--short" ]; then
+    echo "${command##*/}"
+  else
+    echo "$command"
+  fi
+done | sort

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the local application-specific Node version
+#
+# Usage: ndenv local <version>
+#        ndenv local --unset
+#
+# Sets the local application-specific Node version by writing the
+# version name to a file named `.node-version'.
+#
+# When you run a Node command, ndenv will look for a `.node-version'
+# file in the current directory and each parent directory. If no such
+# file is found in the tree, ndenv will use the global Node version
+# specified with `ndenv global'. A version specified with the
+# `NDENV_VERSION' environment variable takes precedence over local
+# and global versions.
+#
+# For backwards compatibility, ndenv will also read version
+# specifications from `.ndenv-version' files, but a `.node-version'
+# file in the same directory takes precedence.
+#
+# <version> should be a string matching a Node version known to ndenv.
+# The special version string `system' will use your default system Node.
+# Run `ndenv versions' for a list of available Node versions.
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  echo --unset
+  echo system
+  exec ndenv-versions --bare
+fi
+
+NDENV_VERSION="$1"
+
+if [ "$NDENV_VERSION" = "--unset" ]; then
+  rm -f .node-version .ndenv-version
+elif [ -n "$NDENV_VERSION" ]; then
+  previous_file="$(NDENV_VERSION= ndenv-version-origin || true)"
+  ndenv-version-file-write .node-version "$NDENV_VERSION"
+  if [ "$previous_file" -ef .ndenv-version ]; then
+    rm -f .ndenv-version
+    { echo "ndenv: removed existing \`.ndenv-version' file and migrated"
+      echo "       local version specification to \`.node-version' file"
+    } >&2
+  fi
+else
+  ndenv-version-file-read .node-version ||
+  ndenv-version-file-read .ndenv-version ||
+  { echo "ndenv: no local version configured for this directory"
+    exit 1
+  } >&2
+fi

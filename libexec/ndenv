@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -e
+export -n CDPATH
+
+if [ "$1" = "--debug" ]; then
+  export NDENV_DEBUG=1
+  shift
+fi
+
+if [ -n "$NDENV_DEBUG" ]; then
+  export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '
+  set -x
+fi
+
+READLINK=$(type -p greadlink readlink | head -1)
+if [ -z "$READLINK" ]; then
+  echo "ndenv: cannot find readlink - are you missing GNU coreutils?" >&2
+  exit 1
+fi
+
+resolve_link() {
+  $READLINK "$1"
+}
+
+abs_dirname() {
+  local cwd="$(pwd)"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(resolve_link "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+if [ -z "${NDENV_ROOT}" ]; then
+  NDENV_ROOT="${HOME}/.ndenv"
+else
+  NDENV_ROOT="${NDENV_ROOT%/}"
+fi
+export NDENV_ROOT
+
+if [ -z "${NDENV_DIR}" ]; then
+  NDENV_DIR="$(pwd)"
+else
+  cd "$NDENV_DIR" 2>/dev/null || {
+    echo "ndenv: cannot change working directory to \`$NDENV_DIR'"
+    exit 1
+  } >&2
+  NDENV_DIR="$(pwd)"
+  cd "$OLDPWD"
+fi
+export NDENV_DIR
+
+
+shopt -s nullglob
+
+bin_path="$(abs_dirname "$0")"
+for plugin_bin in "${NDENV_ROOT}/plugins/"*/bin; do
+  bin_path="${bin_path}:${plugin_bin}"
+done
+export PATH="${bin_path}:${PATH}"
+
+hook_path="${NDENV_HOOK_PATH}:${NDENV_ROOT}/ndenv.d:/usr/local/etc/ndenv.d:/etc/ndenv.d:/usr/lib/ndenv/hooks"
+for plugin_hook in "${NDENV_ROOT}/plugins/"*/etc/ndenv.d; do
+  hook_path="${hook_path}:${plugin_hook}"
+done
+export NDENV_HOOK_PATH="$hook_path"
+
+shopt -u nullglob
+
+
+command="$1"
+case "$command" in
+"" | "-h" | "--help" )
+  echo -e "$(ndenv---version)\n$(ndenv-help)" >&2
+  ;;
+"-v" )
+  exec ndenv---version
+  ;;
+* )
+  command_path="$(command -v "ndenv-$command" || true)"
+  if [ -z "$command_path" ]; then
+    echo "ndenv: no such command \`$command'" >&2
+    exit 1
+  fi
+
+  shift 1
+  exec "$command_path" "$@"
+  ;;
+esac

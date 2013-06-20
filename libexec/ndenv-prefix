@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Summary: Display prefix for a Node version
+# Usage: ndenv prefix [<version>]
+#
+# Displays the directory where a Node version is installed. If no
+# version is given, `ndenv prefix' displays the location of the
+# currently selected version.
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  echo system
+  exec ndenv-versions --bare
+fi
+
+if [ -n "$1" ]; then
+  export NDENV_VERSION="$1"
+elif [ -z "$NDENV_VERSION" ]; then
+  NDENV_VERSION="$(ndenv-version-name)"
+fi
+
+if [ "$NDENV_VERSION" = "system" ]; then
+  NODE_PATH="$(ndenv-which node)"
+  NODE_PATH="${NODE_PATH%/*}"
+  echo "${NODE_PATH%/bin}"
+  exit
+fi
+
+NDENV_PREFIX_PATH="${NDENV_ROOT}/versions/${NDENV_VERSION}"
+if [ ! -d "$NDENV_PREFIX_PATH" ]; then
+  echo "ndenv: version \`${NDENV_VERSION}' not installed" >&2
+  exit 1
+fi
+
+echo "$NDENV_PREFIX_PATH"

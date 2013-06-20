@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# Summary: Run an executable with the selected Node version
+#
+# Usage: ndenv exec <command> [arg1 arg2...]
+#
+# Runs an executable by first preparing PATH so that the selected Node
+# version's `bin' directory is at the front.
+#
+# For example, if the currently selected Node version is 0.10.12:
+#   ndenv exec npm install
+#
+# is equivalent to:
+#   PATH="$NDENV_ROOT/versions/0.10.12/bin:$PATH" npm install
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  exec ndenv shims --short
+fi
+
+NDENV_VERSION="$(ndenv-version-name)"
+NDENV_COMMAND="$1"
+
+if [ -z "$NDENV_COMMAND" ]; then
+  ndenv-help --usage exec >&2
+  exit 1
+fi
+
+export NDENV_VERSION
+NDENV_COMMAND_PATH="$(ndenv-which "$NDENV_COMMAND")"
+NDENV_BIN_PATH="${NDENV_COMMAND_PATH%/*}"
+
+OLDIFS="$IFS"
+IFS=$'\n' scripts=(`ndenv-hooks exec`)
+IFS="$OLDIFS"
+for script in "${scripts[@]}"; do
+  source "$script"
+done
+
+shift 1
+if [ "$NDENV_VERSION" != "system" ]; then
+  export PATH="${NDENV_BIN_PATH}:${PATH}"
+fi
+exec -a "$NDENV_COMMAND" "$NDENV_COMMAND_PATH" "$@"

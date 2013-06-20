@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the shell-specific Node version
+#
+# Usage: ndenv shell <version>
+#        ndenv shell --unset
+#
+# Sets a shell-specific Node version by setting the `NDENV_VERSION'
+# environment variable in your shell. This version overrides local
+# application-specific versions and the global version.
+#
+# <version> should be a string matching a Node version known to ndenv.
+# The special version string `system' will use your default system Node.
+# Run `ndenv versions' for a list of available Node versions.
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  echo --unset
+  echo system
+  exec ndenv-versions --bare
+fi
+
+version="$1"
+
+if [ -z "$version" ]; then
+  if [ -z "$NDENV_VERSION" ]; then
+    echo "ndenv: no shell-specific version configured" >&2
+    exit 1
+  else
+    echo "echo \"\$NDENV_VERSION\""
+    exit
+  fi
+fi
+
+if [ "$version" = "--unset" ]; then
+  echo "unset NDENV_VERSION"
+  exit
+fi
+
+# Make sure the specified version is installed.
+if ndenv-prefix "$version" >/dev/null; then
+  echo "export NDENV_VERSION=\"${version}\""
+else
+  echo "return 1"
+  exit 1
+fi

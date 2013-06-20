@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Summary: Detect the file that sets the current ndenv version
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+find_local_version_file() {
+  local root="$1"
+  while [ -n "$root" ]; do
+    if [ -e "${root}/.node-version" ]; then
+      echo "${root}/.node-version"
+      exit
+    elif [ -e "${root}/.ndenv-version" ]; then
+      echo "${root}/.ndenv-version"
+      exit
+    fi
+    root="${root%/*}"
+  done
+}
+
+find_local_version_file "$NDENV_DIR"
+[ "$NDENV_DIR" = "$PWD" ] || find_local_version_file "$PWD"
+
+global_version_file="${NDENV_ROOT}/version"
+
+if [ -e "$global_version_file" ]; then
+  echo "$global_version_file"
+elif [ -e "${NDENV_ROOT}/global" ]; then
+  echo "${NDENV_ROOT}/global"
+elif [ -e "${NDENV_ROOT}/default" ]; then
+  echo "${NDENV_ROOT}/default"
+else
+  echo "$global_version_file"
+fi

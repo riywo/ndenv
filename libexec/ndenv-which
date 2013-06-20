@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#
+# Summary: Display the full path to an executable
+#
+# Usage: ndenv which <command>
+#
+# Displays the full path to the executable that ndenv will invoke when
+# you run the given command.
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+# Provide ndenv completions
+if [ "$1" = "--complete" ]; then
+  exec ndenv shims --short
+fi
+
+expand_path() {
+  if [ ! -d "$1" ]; then
+    return 1
+  fi
+
+  local cwd="$(pwd)"
+  cd "$1"
+  pwd
+  cd "$cwd"
+}
+
+remove_from_path() {
+  local path_to_remove="$(expand_path "$1")"
+  local result=""
+
+  if [ -z "$path_to_remove" ]; then
+    echo "${PATH}"
+    return
+  fi
+
+  local paths
+  IFS=: paths=($PATH)
+
+  for path in "${paths[@]}"; do
+    path="$(expand_path "$path" || true)"
+    if [ -n "$path" ] && [ "$path" != "$path_to_remove" ]; then
+      result="${result}${path}:"
+    fi
+  done
+
+  echo "${result%:}"
+}
+
+NDENV_VERSION="$(ndenv-version-name)"
+NDENV_COMMAND="$1"
+
+if [ -z "$NDENV_COMMAND" ]; then
+  ndenv-help --usage which >&2
+  exit 1
+fi
+
+if [ "$NDENV_VERSION" = "system" ]; then
+  PATH="$(remove_from_path "${NDENV_ROOT}/shims")"
+  NDENV_COMMAND_PATH="$(command -v "$NDENV_COMMAND" || true)"
+else
+  NDENV_COMMAND_PATH="${NDENV_ROOT}/versions/${NDENV_VERSION}/bin/${NDENV_COMMAND}"
+fi
+
+OLDIFS="$IFS"
+IFS=$'\n' scripts=(`ndenv-hooks which`)
+IFS="$OLDIFS"
+for script in "${scripts[@]}"; do
+  source "$script"
+done
+
+if [ -x "$NDENV_COMMAND_PATH" ]; then
+  echo "$NDENV_COMMAND_PATH"
+else
+  echo "ndenv: $NDENV_COMMAND: command not found" >&2
+
+  versions="$(ndenv-whence "$NDENV_COMMAND" || true)"
+  if [ -n "$versions" ]; then
+    { echo
+      echo "The \`$1' command exists in these Node versions:"
+      echo "$versions" | sed 's/^/  /g'
+      echo
+    } >&2
+  fi
+
+  exit 127
+fi

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Usage: ndenv version-file-write <file> <version>
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+NDENV_VERSION_FILE="$1"
+NDENV_VERSION="$2"
+
+if [ -z "$NDENV_VERSION" ] || [ -z "$NDENV_VERSION_FILE" ]; then
+  ndenv-help --usage version-file-write >&2
+  exit 1
+fi
+
+# Make sure the specified version is installed.
+ndenv-prefix "$NDENV_VERSION" >/dev/null
+
+# Write the version out to disk.
+echo "$NDENV_VERSION" > "$NDENV_VERSION_FILE"

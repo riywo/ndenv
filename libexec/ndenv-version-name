@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Summary: Show the current Node version
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+if [ -z "$NDENV_VERSION" ]; then
+  NDENV_VERSION_FILE="$(ndenv-version-file)"
+  NDENV_VERSION="$(ndenv-version-file-read "$NDENV_VERSION_FILE" || true)"
+fi
+
+if [ -z "$NDENV_VERSION" ] || [ "$NDENV_VERSION" = "system" ]; then
+  echo "system"
+  exit
+fi
+
+version_exists() {
+  local version="$1"
+  [ -d "${NDENV_ROOT}/versions/${version}" ]
+}
+
+if version_exists "$NDENV_VERSION"; then
+  echo "$NDENV_VERSION"
+elif version_exists "${NDENV_VERSION#node-}"; then
+  { echo "warning: ignoring extraneous \`node-' prefix in version \`${NDENV_VERSION}'"
+    echo "         (set by $(ndenv-version-origin))"
+  } >&2
+  echo "${NDENV_VERSION#node-}"
+else
+  echo "ndenv: version \`$NDENV_VERSION' is not installed" >&2
+  exit 1
+fi
