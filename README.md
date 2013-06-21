@@ -9,7 +9,7 @@ ndenv is similar to [rbenv](https://github.com/sstephenson/rbenv), manages multi
     $ node -v
     v0.11.2
 
-Almost all of code come from rbenv and nvm.
+Almost all of code come from rbenv and nvm. Thanks a lot!
 
 ## INSTALL
 
