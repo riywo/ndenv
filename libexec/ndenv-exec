@@ -43,5 +43,6 @@ done
 shift 1
 if [ "$NDENV_VERSION" != "system" ]; then
   export PATH="${NDENV_BIN_PATH}:${PATH}"
+  export NODE_PATH="${NDENV_ROOT}/versions/$(ndenv-version-name)/lib/node_modules:${NODE_PATH}"
 fi
 exec -a "$NDENV_COMMAND" "$NDENV_COMMAND_PATH" "$@"
