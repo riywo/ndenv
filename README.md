@@ -1,5 +1,5 @@
-# ndenv - another node.js version manager
-ndenv is similar to [rbenv](https://github.com/sstephenson/rbenv), manages multi versions node.js. Unlike [nvm](https://github.com/creationix/nvm), ndenv automatically change node version using `.node-version` file locally.
+# ndenv - another node.js/io.js version manager
+ndenv is similar to [rbenv](https://github.com/sstephenson/rbenv), manages multi versions node.js/io.js. Unlike [nvm](https://github.com/creationix/nvm), ndenv automatically change node version using `.node-version` file locally.
 
     $ node -v
     v0.10.12
@@ -20,7 +20,8 @@ Almost all of code come from rbenv. Thanks a lot!
 
 I recommend using [node-build](https://github.com/riywo/node-build) for installing node itself. See also node-build.
 
-    $ ndenv install v0.10.12
+    $ ndenv install v0.12.0
+    $ ndenv install iojs-v1.2.0
     $ ndenv rehash
 
 ## LICENSE
