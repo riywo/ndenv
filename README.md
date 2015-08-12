@@ -14,7 +14,7 @@ Almost all of code come from rbenv. Thanks a lot!
 ## INSTALL
 
     $ git clone https://github.com/riywo/ndenv ~/.ndenv
-    $ echo 'export PATH="$HOME/.ndenv/bin:$PATH"' >> ~/.bash_profile
+    $ echo 'export PATH="$HOME/.ndenv/bin:$HOME/.ndenv/shims:$PATH"' >> ~/.bash_profile
     $ echo 'eval "$(ndenv init -)"' >> ~/.bash_profile
     $ exec $SHELL -l
 
