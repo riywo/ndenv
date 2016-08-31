@@ -9,7 +9,7 @@ set -e
 [ -n "\$NDENV_DEBUG" ] && set -x
 
 program="\${0##*/}"
-export NDENV_ROOT="/home/zakame/.ndenv"
+export NDENV_ROOT="$NDENV_ROOT"
 "$(command -v ndenv)" exec "\$program" "\$@"
 rc=\$?
 for arg in \$W
