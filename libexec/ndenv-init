@@ -115,3 +115,168 @@ ndenv() {
   esac
 }
 EOS
+#!/usr/bin/env bash
+# Summary: Configure the shell environment for ndenv
+# Usage: eval "$(ndenv init - [--no-rehash] [<shell>])"
+
+set -e
+[ -n "$NDENV_DEBUG" ] && set -x
+
+print=""
+no_rehash=""
+for args in "$@"
+do
+  if [ "$args" = "-" ]; then
+    print=1
+    shift
+  fi
+
+  if [ "$args" = "--no-rehash" ]; then
+    no_rehash=1
+    shift
+  fi
+done
+
+shell="$1"
+if [ -z "$shell" ]; then
+  shell="$(ps c -p "$PPID" -o 'ucomm=' 2>/dev/null || true)"
+  shell="${shell##-}"
+  shell="${shell%% *}"
+  shell="${shell:-$SHELL}"
+  shell="${shell##*/}"
+fi
+
+READLINK=$(type -p greadlink readlink | head -1)
+if [ -z "$READLINK" ]; then
+  echo "ndenv: cannot find readlink - are you missing GNU coreutils?" >&2
+  exit 1
+fi
+
+resolve_link() {
+  $READLINK "$1"
+}
+
+abs_dirname() {
+  local cwd="$(pwd)"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(resolve_link "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+root="$(abs_dirname "$0")/.."
+
+if [ -z "$print" ]; then
+  case "$shell" in
+  bash )
+    profile='~/.bash_profile'
+    ;;
+  zsh )
+    profile='~/.zshrc'
+    ;;
+  ksh )
+    profile='~/.profile'
+    ;;
+  fish )
+    profile='~/.config/fish/config.fish'
+    ;;
+  * )
+    profile='your profile'
+    ;;
+  esac
+
+  { echo "# Load ndenv automatically by adding"
+    echo "# the following to ${profile}:"
+    echo
+    case "$shell" in
+    fish )
+      echo 'status -is-interactive; and . (ndenv init -|psub)'
+      ;;
+    * )
+      echo 'eval "$(ndenv init -)"'
+      ;;
+    esac
+    echo
+  } >&2
+
+  exit 1
+fi
+
+mkdir -p "${NDENV_ROOT}/"{shims,versions}
+
+if [[ ":${PATH}:" != *:"${NDENV_ROOT}/shims":* ]]; then
+  case "$shell" in
+  fish )
+    echo "setenv PATH '${NDENV_ROOT}/shims' \$PATH"
+    ;;
+  * )
+    echo 'export PATH="'${NDENV_ROOT}'/shims:${PATH}"'
+    ;;
+  esac
+fi
+
+case "$shell" in
+bash | zsh )
+  echo "source \"$root/completions/ndenv.${shell}\""
+  ;;
+esac
+
+if [ -z "$no_rehash" ]; then
+  echo 'ndenv rehash 2>/dev/null'
+fi
+
+commands=(`ndenv-commands --sh`)
+case "$shell" in
+fish )
+  cat <<EOS
+function ndenv
+  set command \$argv[1]
+  set -e argv[1]
+  switch "\$command"
+  case ${commands[*]}
+    . (ndenv "sh-\$command" \$argv|psub)
+  case '*'
+    command ndenv "\$command" \$argv
+  end
+end
+EOS
+  ;;
+ksh )
+  cat <<EOS
+function ndenv {
+  typeset command
+EOS
+  ;;
+* )
+  cat <<EOS
+ndenv() {
+  local command
+EOS
+  ;;
+esac
+
+if [ "$shell" != "fish" ]; then
+IFS="|"
+cat <<EOS
+ndenv() {
+  typeset command
+  command="\$1"
+  if [ "\$#" -gt 0 ]; then
+    shift
+  fi
+
+  case "\$command" in
+  ${commands[*]})
+    eval "\`ndenv "sh-\$command" "\$@"\`";;
+  *)
+    command ndenv "\$command" "\$@";;
+  esac
+}
+EOS
+fi
