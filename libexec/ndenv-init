@@ -117,12 +117,38 @@ if [ -z "$no_rehash" ]; then
 fi
 
 commands=(`ndenv-commands --sh`)
+case "$shell" in
+fish )
+  cat <<EOS
+function ndenv
+  set command \$argv[1]
+  set -e argv[1]
+  switch "\$command"
+  case ${commands[*]}
+    source (ndenv "sh-\$command" \$argv|psub)
+  case '*'
+    command ndenv "\$command" \$argv
+  end
+end
+EOS
+  ;;
+ksh )
+  cat <<EOS
+function ndenv {
+  typeset command
+EOS
+  ;;
+* )
+  cat <<EOS
+ndenv() {
+  local command
+EOS
+  ;;
+esac
 
 if [ "$shell" != "fish" ]; then
 IFS="|"
 cat <<EOS
-ndenv() {
-  typeset command
   command="\$1"
   if [ "\$#" -gt 0 ]; then
     shift
