@@ -9,5 +9,17 @@ fi
 
 # When ndenv shell integration is enabled, delegate to ndenv-rehash,
 # then tell the shell to empty its command lookup cache.
-ndenv-rehash
-echo "hash -r 2>/dev/null || true"
+shell="$1"
+if [ -z "$shell" ]; then
+  shell="$(ps c -p "$PPID" -o 'ucomm=' 2>/dev/null || true)"
+  shell="${shell##-}"
+  shell="${shell%% *}"
+  shell="${shell:-$SHELL}"
+  shell="${shell##*/}"
+fi
+
+if [ "$shell" == "fish" ]; then
+  echo "hash -r 2>/dev/null or true"
+else
+  echo "hash -r 2>/dev/null || true"
+fi
