@@ -17,6 +17,6 @@ function __fish_ndenv_using_command
 end
 
 complete -f -c ndenv -n '__fish_ndenv_needs_command' -a '(ndenv commands)'
-for cmd in (anyenv commands)
+for cmd in (ndenv commands)
   complete -f -c ndenv -n "__fish_ndenv_using_command $cmd" -a "(ndenv completions $cmd)"
 end
