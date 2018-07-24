@@ -149,8 +149,6 @@ esac
 if [ "$shell" != "fish" ]; then
 IFS="|"
 cat <<EOS
-ndenv() {
-  typeset command
   command="\$1"
   if [ "\$#" -gt 0 ]; then
     shift
