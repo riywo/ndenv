@@ -1,3 +1,6 @@
+# [Deprecated] nodenv is better alternative
+Please consider to use [`nodenv`](https://github.com/nodenv/nodenv). `ndenv` repository is not maintained actively.
+
 # ndenv - another node.js/io.js version manager
 ndenv is similar to [rbenv](https://github.com/sstephenson/rbenv), manages multi versions node.js/io.js. Unlike [nvm](https://github.com/creationix/nvm), ndenv automatically change node version using `.node-version` file locally.
 
