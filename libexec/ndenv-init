@@ -83,9 +83,9 @@ fi
 
 mkdir -p "${NDENV_ROOT}/"{shims,versions}
 
-if [[ ":${PATH}:" != *:"${NDENV_ROOT}/shims":* ]]; then
-  echo 'export PATH="'${NDENV_ROOT}'/shims:${PATH}"'
-fi
+# Don't check to see if it is already included. This can cause problems
+# when reentering a shell (ie, via screen or tmux).
+echo 'export PATH="'${NDENV_ROOT}'/shims:${PATH}"'
 
 case "$shell" in
 bash | zsh )
