@@ -66,6 +66,9 @@ if [ -z "$print" ]; then
   ksh )
     profile='~/.profile'
     ;;
+  fish )
+    profile='~/.config/fish/config.fish'
+    ;;
   * )
     profile='your profile'
     ;;
@@ -74,7 +77,14 @@ if [ -z "$print" ]; then
   { echo "# Load ndenv automatically by adding"
     echo "# the following to ${profile}:"
     echo
-    echo 'eval "$(ndenv init -)"'
+    case "$shell" in
+    fish )
+      echo 'status --is-interactive; and source (ndenv init -|psub)'
+      ;;
+    * )
+      echo 'eval "$(ndenv init -)"'
+      ;;
+    esac
     echo
   } >&2
 
@@ -83,12 +93,21 @@ fi
 
 mkdir -p "${NDENV_ROOT}/"{shims,versions}
 
-if [[ ":${PATH}:" != *:"${NDENV_ROOT}/shims":* ]]; then
-  echo 'export PATH="'${NDENV_ROOT}'/shims:${PATH}"'
-fi
+case "$shell" in
+fish )
+  if [[ ":${PATH}:" != *:"${NDENV_ROOT}/shims":* ]]; then
+    echo 'set -gx PATH '${NDENV_ROOT}'/shims $PATH'
+  fi
+  ;;
+* )
+  if [[ ":${PATH}:" != *:"${NDENV_ROOT}/shims":* ]]; then
+    echo 'export PATH="'${NDENV_ROOT}'/shims:${PATH}"'
+  fi
+  ;;
+esac
 
 case "$shell" in
-bash | zsh )
+bash | zsh | fish )
   echo "source \"$root/completions/ndenv.${shell}\""
   ;;
 esac
@@ -98,10 +117,38 @@ if [ -z "$no_rehash" ]; then
 fi
 
 commands=(`ndenv-commands --sh`)
+case "$shell" in
+fish )
+  cat <<EOS
+function ndenv
+  set command \$argv[1]
+  set -e argv[1]
+  switch "\$command"
+  case ${commands[*]}
+    source (ndenv "sh-\$command" \$argv|psub)
+  case '*'
+    command ndenv "\$command" \$argv
+  end
+end
+EOS
+  ;;
+ksh )
+  cat <<EOS
+function ndenv {
+  typeset command
+EOS
+  ;;
+* )
+  cat <<EOS
+ndenv() {
+  local command
+EOS
+  ;;
+esac
+
+if [ "$shell" != "fish" ]; then
 IFS="|"
 cat <<EOS
-ndenv() {
-  typeset command
   command="\$1"
   if [ "\$#" -gt 0 ]; then
     shift
@@ -115,3 +162,4 @@ ndenv() {
   esac
 }
 EOS
+fi
